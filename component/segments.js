@@ -21,6 +21,17 @@ export default class Segments {
     })
   }
 
+  set(data, cb) {
+    this.restClient.request({
+      path: '/segment',
+      method: 'post',
+      bodyJSObject: data
+    }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    })
+  }
 
   update(id, data, cb) {
     this.restClient.request({
@@ -33,6 +44,8 @@ export default class Segments {
       cb(null, error);
     })
   }
+
+  
 
 }
 

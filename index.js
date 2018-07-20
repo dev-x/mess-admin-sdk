@@ -7,9 +7,12 @@ import Admin from './component/admin'
 import User from './component/user'
 import Tag from './component/tag'
 import Inbox from './component/inbox'
+import Conversation from './component/conversation'
+import Message from './component/message'
 import App from './component/app';
 import Segments from './component/segments'
 import Team from './component/team'
+import Event from './component/event'
 
 export default class WidgetSDK {
 
@@ -29,11 +32,15 @@ export default class WidgetSDK {
     this.auth = new Auth(this.restClient, this.io);
     this.admin = new Admin(this.restClient, this.io);
     this.inbox = new Inbox(this.restClient, this.io);
+    this.conversation = new Conversation(this.restClient, this.io);
     this.user = new User(this.restClient, this.io);
     this.tag = new Tag(this.restClient, this.io);
     this.app = new App(this.restClient, this.io);
     this.segments = new Segments(this.restClient, this.io);
     this.team = new Team(this.restClient, this.io);
+    this.event = new Event(this.restClient, this.io);
+    this.message = new Message(this.restClient, this.io)
+
   }
 
   init({ token, email, headers }, cb) {

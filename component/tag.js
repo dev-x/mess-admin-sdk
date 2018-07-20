@@ -1,4 +1,4 @@
-export default class User {
+export default class Tag {
   constructor(restClient, io) {
     this.restClient = restClient;
     this.io = io

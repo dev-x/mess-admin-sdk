@@ -13,7 +13,7 @@ export default class Inbox {
   }
 
   getUsers(query, cb) {
-    this.restClient.request({ path: '/user?select=id,name&limit=1000"', method: 'get', query }).then(responce => {
+    this.restClient.request({ path: '/user', method: 'get', query }).then(responce => {
       cb(responce, null);
     }).catch(error => {
       cb(null, error);
@@ -80,7 +80,7 @@ export default class Inbox {
   }
 
   upload_file(form, cb) {
-    fetch(this.restClient.baseUrl + '/api/upload', {
+    fetch(this.restClient.baseUrl + '/upload', {
       method: 'POST',
       headers: {
         "x-token": this.restClient.headers['x-token']

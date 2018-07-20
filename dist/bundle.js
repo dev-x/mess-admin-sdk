@@ -10407,7 +10407,7 @@ function isPlainObject(value) {
 
 var lodash_isplainobject = isPlainObject;
 
-var flexRestClient = createCommonjsModule(function (module, exports) {
+var restClient = createCommonjsModule(function (module, exports) {
 
 (function() {
     function isString(s){
@@ -10617,7 +10617,7 @@ var flexRestClient = createCommonjsModule(function (module, exports) {
 
 }).call(commonjsGlobal);
 });
-var flexRestClient_1 = flexRestClient.restClient;
+var restClient_1 = restClient.restClient;
 
 function checkHttpStatus(response) {
   if(response.status >= 200 && response.status < 300) {
@@ -10639,7 +10639,7 @@ function makeRequest ({url, method, headers, bodyJSObject}) {
   }).then(checkHttpStatus).then(response => response.json());
 }
 
-flexRestClient.config({
+restClient.config({
   baseUrl: '',
   headers: {
     'Accept': 'application/json',
@@ -10897,7 +10897,7 @@ class User {
 
 }
 
-class User$1 {
+class Tag {
   constructor(restClient, io) {
     this.restClient = restClient;
     this.io = io;
@@ -10937,7 +10937,7 @@ class Inbox {
   }
 
   getUsers(query, cb) {
-    this.restClient.request({ path: '/user?select=id,name&limit=1000"', method: 'get', query }).then(responce => {
+    this.restClient.request({ path: '/user', method: 'get', query }).then(responce => {
       cb(responce, null);
     }).catch(error => {
       cb(null, error);
@@ -11004,7 +11004,7 @@ class Inbox {
   }
 
   upload_file(form, cb) {
-    fetch(this.restClient.baseUrl + '/api/upload', {
+    fetch(this.restClient.baseUrl + '/upload', {
       method: 'POST',
       headers: {
         "x-token": this.restClient.headers['x-token']
@@ -11038,6 +11038,46 @@ class Inbox {
   onEvent(cb) {
     this.io.socket.on('admin_event', (e) => {
       cb(e);
+    });
+  }
+
+}
+
+class Conversation {
+  constructor(restClient, io) {
+    this.restClient = restClient;
+    this.io = io;
+  }
+
+  find(query, cb) {
+    this.restClient.request({ path: '/conversation', method: 'get', query }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
+
+  messages(id, query, cb) {
+    query['conversation_id'] = id;
+    this.restClient.request({ path: '/message', method: 'get', query }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
+}
+
+class Message {
+  constructor(restClient, io) {
+    this.restClient = restClient;
+    this.io = io;
+  }
+
+  find(query, cb) {
+    this.restClient.request({ path: '/message', method: 'get', query }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
     });
   }
 
@@ -11084,6 +11124,17 @@ class Segments {
     })
   }
 
+  set(data, cb) {
+    this.restClient.request({
+      path: '/segment',
+      method: 'post',
+      bodyJSObject: data
+    }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
 
   update(id, data, cb) {
     this.restClient.request({
@@ -11096,6 +11147,8 @@ class Segments {
       cb(null, error);
     });
   }
+
+  
 
 }
 
@@ -11124,6 +11177,22 @@ class Team {
 
 }
 
+class Event {
+  constructor(restClient, io) {
+    this.restClient = restClient;
+    this.io = io;
+  }
+
+  find(query, cb) {
+    this.restClient.request({ path: '/event', method: 'get', query }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
+
+}
+
 class WidgetSDK {
 
   constructor({ url }) {
@@ -11132,8 +11201,8 @@ class WidgetSDK {
     io.sails.useCORSRouteToGetCookie = false;
     io.sails.autoConnect = true;
     this.io = io;
-    flexRestClient.baseUrl = url + '/api';
-    this.restClient = flexRestClient;
+    restClient.baseUrl = url + '/api';
+    this.restClient = restClient;
     this.options = { urlApi: url };
     this.onMessage = function () { };
     this.inited = false;
@@ -11142,11 +11211,15 @@ class WidgetSDK {
     this.auth = new Auth(this.restClient, this.io);
     this.admin = new Admin(this.restClient, this.io);
     this.inbox = new Inbox(this.restClient, this.io);
+    this.conversation = new Conversation(this.restClient, this.io);
     this.user = new User(this.restClient, this.io);
-    this.tag = new User$1(this.restClient, this.io);
+    this.tag = new Tag(this.restClient, this.io);
     this.app = new App(this.restClient, this.io);
     this.segments = new Segments(this.restClient, this.io);
     this.team = new Team(this.restClient, this.io);
+    this.event = new Event(this.restClient, this.io);
+    this.message = new Message(this.restClient, this.io);
+
   }
 
   init({ token, email, headers }, cb) {

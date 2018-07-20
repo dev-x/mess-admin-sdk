@@ -1,3 +1,4 @@
+
 export default class Team {
   constructor(restClient, io) {
     this.restClient = restClient;
