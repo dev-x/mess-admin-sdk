@@ -39,6 +39,10 @@ export default class User {
     if (Array.isArray(data)) {
       data = { predicates: data }
     } else {
+      if (data.hasOwnProperty('query')) {
+        query = Object.assign({}, data.query);
+        delete data.query;
+      }
       if (data.hasOwnProperty('skip') || data.hasOwnProperty('limit') || data.hasOwnProperty('sort')) {
         if (data.hasOwnProperty('skip')) {
           query['skip'] = data.skip;

@@ -78,6 +78,14 @@ export default class Inbox {
       cb(msg);
     })
   }
+  
+  onWidgetEvent(cb) {
+    this.io.socket.on("widget_event", (data) => {
+      cb(data);
+    });
+  }
+
+
 
   upload_file(form, cb) {
     fetch(this.restClient.baseUrl + '/upload', {

@@ -4,6 +4,7 @@ import restClient from './config/rest_client';
 
 import Auth from './component/auth'
 import Admin from './component/admin'
+import Attribute from './component/attribute'
 import User from './component/user'
 import Tag from './component/tag'
 import Inbox from './component/inbox'
@@ -13,6 +14,7 @@ import App from './component/app';
 import Segments from './component/segments'
 import Team from './component/team'
 import Event from './component/event'
+import Company from './component/company'
 
 export default class WidgetSDK {
 
@@ -33,6 +35,8 @@ export default class WidgetSDK {
     this.admin = new Admin(this.restClient, this.io);
     this.inbox = new Inbox(this.restClient, this.io);
     this.conversation = new Conversation(this.restClient, this.io);
+    this.company = new Company(this.restClient, this.io)
+    this.attribute = new Attribute(this.restClient, this.io);
     this.user = new User(this.restClient, this.io);
     this.tag = new Tag(this.restClient, this.io);
     this.app = new App(this.restClient, this.io);

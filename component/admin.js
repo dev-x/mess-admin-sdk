@@ -3,6 +3,24 @@ export default class Admin {
     this.restClient = restClient;
   }
 
+  find(query, cb) {
+    this.restClient.request({ path: '/admin', method: 'get', query }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    })
+  }
+
+  event(body, cb) {
+    this.restClient.request({ path: 'api/admin/admin_event', method: 'post', bodyJSObject: body }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    })
+  }
+
+
+
   getAdmins(query, cb) {
     this.restClient.request({ path: '/admin', method: 'get', query }).then(responce => {
       cb(responce, null);

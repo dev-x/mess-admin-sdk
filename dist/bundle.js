@@ -10691,6 +10691,24 @@ class Admin {
     this.restClient = restClient;
   }
 
+  find(query, cb) {
+    this.restClient.request({ path: '/admin', method: 'get', query }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
+
+  event(body, cb) {
+    this.restClient.request({ path: 'api/admin/admin_event', method: 'post', bodyJSObject: body }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
+
+
+
   getAdmins(query, cb) {
     this.restClient.request({ path: '/admin', method: 'get', query }).then(responce => {
       cb(responce, null);
@@ -10751,6 +10769,21 @@ class Admin {
 
 }
 
+class Attribute {
+  constructor(restClient) {
+    this.restClient = restClient;
+  }
+
+  find(query, cb) {
+    this.restClient.request({ path: '/attribute', method: 'get', query }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
+
+}
+
 class User {
   constructor(restClient, io) {
     this.restClient = restClient;
@@ -10792,6 +10825,10 @@ class User {
     if (Array.isArray(data)) {
       data = { predicates: data };
     } else {
+      if (data.hasOwnProperty('query')) {
+        query = Object.assign({}, data.query);
+        delete data.query;
+      }
       if (data.hasOwnProperty('skip') || data.hasOwnProperty('limit') || data.hasOwnProperty('sort')) {
         if (data.hasOwnProperty('skip')) {
           query['skip'] = data.skip;
@@ -11002,6 +11039,14 @@ class Inbox {
       cb(msg);
     });
   }
+  
+  onWidgetEvent(cb) {
+    this.io.socket.on("widget_event", (data) => {
+      cb(data);
+    });
+  }
+
+
 
   upload_file(form, cb) {
     fetch(this.restClient.baseUrl + '/upload', {
@@ -11193,6 +11238,50 @@ class Event {
 
 }
 
+class Company {
+  constructor(restClient) {
+    this.restClient = restClient;
+  }
+
+  find(query, cb) {
+    this.restClient.request({ path: '/company', method: 'get', query }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
+  
+  get(id, cb) {
+    this.restClient.request({ path: '/company/' + id, method: 'get' }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
+
+  search(data, cb) {
+    let query = {};
+    if (data.sort) {
+      query['sort'] = data.sort;
+      delete data.sort;
+    }
+    if (data.limit) {
+      query['limit'] = data.limit;
+      delete data.limit;
+    }
+    if (data.skip) {
+      query['skip'] = data.skip;
+      delete data.skip;
+    }
+    this.restClient.request({ path: '/company/search', method: 'post', query, bodyJSObject: data }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    });
+  }
+
+}
+
 class WidgetSDK {
 
   constructor({ url }) {
@@ -11212,6 +11301,8 @@ class WidgetSDK {
     this.admin = new Admin(this.restClient, this.io);
     this.inbox = new Inbox(this.restClient, this.io);
     this.conversation = new Conversation(this.restClient, this.io);
+    this.company = new Company(this.restClient, this.io);
+    this.attribute = new Attribute(this.restClient, this.io);
     this.user = new User(this.restClient, this.io);
     this.tag = new Tag(this.restClient, this.io);
     this.app = new App(this.restClient, this.io);
