@@ -12,7 +12,7 @@ export default class Admin {
   }
 
   event(body, cb) {
-    this.restClient.request({ path: 'api/admin/admin_event', method: 'post', bodyJSObject: body }).then(responce => {
+    this.restClient.request({ path: '/admin/admin_event', method: 'post', bodyJSObject: body }).then(responce => {
       cb(responce, null);
     }).catch(error => {
       cb(null, error);
