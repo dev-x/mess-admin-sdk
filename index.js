@@ -15,6 +15,8 @@ import Segments from './component/segments'
 import Team from './component/team'
 import Event from './component/event'
 import Company from './component/company'
+import ManualMessage from './component/manual_message'
+
 
 export default class WidgetSDK {
 
@@ -43,7 +45,8 @@ export default class WidgetSDK {
     this.segments = new Segments(this.restClient, this.io);
     this.team = new Team(this.restClient, this.io);
     this.event = new Event(this.restClient, this.io);
-    this.message = new Message(this.restClient, this.io)
+    this.message = new Message(this.restClient, this.io);
+    this.manual_message = new ManualMessage(this.restClient, this.io);
 
   }
 
