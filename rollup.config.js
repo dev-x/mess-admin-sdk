@@ -24,7 +24,7 @@ export default {
   input: 'index.js',
   output: {
     file: 'dist/bundle.js',
-    format: 'cjs',
+    format: 'umd',
     name: 'admin_widget_sdk',
     sourceMap: true,
   },
@@ -44,6 +44,10 @@ export default {
     }),
     globals(),
     builtins(),
+    babel({
+      babelrc: false,
+      presets: [['env', { modules: false }]]
+    }),
   ],
 
 };
