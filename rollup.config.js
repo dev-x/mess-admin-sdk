@@ -22,12 +22,17 @@ const babelConfig = {
 
 export default {
   input: 'index.js',
-  output: {
-    file: 'dist/bundle.js',
+  output: [{
+    file: 'dist/umd/bundle.js',
     format: 'umd',
-    name: 'admin_widget_sdk',
+    name: 'mess-admin-sdk',
     sourceMap: true,
-  },
+  }, {
+    file: 'dist/cjs/bundle.js',
+    format: 'cjs',
+    name: 'mess-admin-sdk',
+    sourceMap: true,
+  }],
   external: [],
   plugins: [
     resolve({
