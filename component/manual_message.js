@@ -11,8 +11,24 @@ export default class ManualMessage {
     })
   }
 
+  get(id, cb) {
+    this.restClient.request({ path: '/newmessage/' + id, method: 'get' }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    })
+  }
+
   create(data, cb) {
     this.restClient.request({ path: '/newmessage', method: 'post', bodyJSObject: data }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    })
+  }
+
+  update(id, data, cb) {
+    this.restClient.request({ path: '/newmessage/' + id, method: 'put', bodyJSObject: data }).then(responce => {
       cb(responce, null);
     }).catch(error => {
       cb(null, error);

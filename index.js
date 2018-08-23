@@ -19,8 +19,9 @@ import ManualMessage from './component/manual_message'
 
 
 export default class WidgetSDK {
-
   constructor({ url }) {
+    
+    console.log('@@@@');
     const io = sailsIo(sailsIoClient);
     io.sails.url = url;
     io.sails.useCORSRouteToGetCookie = false

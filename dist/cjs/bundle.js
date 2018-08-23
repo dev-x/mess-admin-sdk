@@ -2,8 +2,8 @@
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
-function commonjsRequire () {
-	throw new Error('Dynamic requires are not currently supported by rollup-plugin-commonjs');
+function unwrapExports (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
 }
 
 function createCommonjsModule(fn, module) {
@@ -10103,221 +10103,273 @@ var lodash_isplainobject = isPlainObject;
 
 var _typeof$e = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 var flexRestClient = createCommonjsModule(function (module, exports) {
 
-  (function () {
+    Object.defineProperty(exports, "__esModule", { value: true });
+
     function isString(s) {
-      return typeof s === 'string';
+        return typeof s === 'string';
     }
-
     function objToQueryString(obj) {
-      return Object.keys(obj).map(function (key) {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]);
-      }).join('&');
+        return Object.keys(obj).map(function (key) {
+            return encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]);
+        }).join('&');
     }
-
-    function objAPIToQueryString(obj) {
-      var resObj = {};
-      if (isPlainObject(obj.filter)) {
-        Object.keys(obj.filter).forEach(function (attr) {
-          if (isPlainObject(obj.filter[attr])) {
-            Object.keys(obj.filter[attr]).forEach(function (op) {
-              resObj['filter[' + attr + '][' + op + ']'] = obj.filter[attr][op];
-            });
-          } else {
-            resObj['filter[' + attr + ']'] = obj.filter[attr];
-          }
-        });
-      }
-      if (Array.isArray(obj.include)) {
-        resObj['include'] = obj.include.join(',');
-      }
-      if (isPlainObject(obj.sort)) {
+    // JSON API standart by default
+    function genSortParam(obj) {
         var sortArr = [];
-        Object.keys(obj.sort).forEach(function (attr) {
-          sortArr.push((obj.sort[attr] != 1 ? '-' : '') + attr);
+        Object.keys(obj).forEach(function (attr) {
+            sortArr.push((obj[attr] != 1 ? '-' : '') + attr);
         });
-        resObj['sort'] = sortArr.join(',');
-      }
-      if (isPlainObject(obj.page)) {
-        if (typeof obj.page.number !== "undefined") {
-          resObj['page[number]'] = obj.page.number;
-        }
-        if (typeof obj.page.size !== "undefined") {
-          resObj['page[size]'] = obj.page.size;
-        }
-      }
-      /*
-      if (typeof obj.skip === 'numeric' && typeof obj.limit === 'numeric' && obj.limit > 0){
-        resObj[ `page[size]` ] = obj.page.limit;
-        resObj[ `page[number]` ] = Math.floor(obj.skip / obj.page.limit) + 1;
-      }
-      */
-      Object.keys(obj).forEach(function (attr) {
-        if (['filter', 'include', 'sort', 'page' /*, 'skip', 'limit'*/].indexOf(attr) < 0) {
-          if (isPlainObject(obj[attr])) {
-            Object.keys(obj[attr]).forEach(function (op) {
-              resObj[attr + '[' + op + ']'] = obj[attr][op];
-            });
-          } else {
-            resObj[attr] = obj[attr].toString();
-          }
-        }
-      });
-
-      return objToQueryString(resObj);
-    }
-
-    var root = this;
-    var previous_mymodule;
-    var isPlainObject;
-
-    if (root) {
-      previous_mymodule = root.restClient;
-      isPlainObject = root.isPlainObject;
-    }
-
-    var has_require = typeof commonjsRequire !== 'undefined';
-
-    if (typeof isPlainObject === 'undefined') {
-      if (has_require) {
-        isPlainObject = lodash_isplainobject;
-      } else {
-        isPlainObject = function isPlainObject(obj) {
-          return (typeof obj === 'undefined' ? 'undefined' : _typeof$e(obj)) == 'object' && obj !== null;
+        return {
+            key: 'sort',
+            value: sortArr.join(',')
         };
-        // throw new Error('mymodule requires underscore, see http://underscorejs.org');
-      }
+    }
+    // JSON API standart by default
+    function genIncludeParam(arr) {
+        return {
+            key: 'include',
+            value: arr.join(',')
+        };
+    }
+    function _objAPIToQueryString(obj) {
+        var resObj = {};
+        if (lodash_isplainobject(obj.filter)) {
+            Object.keys(obj.filter).forEach(function (attr) {
+                if (lodash_isplainobject(obj.filter[attr])) {
+                    Object.keys(obj.filter[attr]).forEach(function (op) {
+                        resObj['filter[' + attr + '][' + op + ']'] = obj.filter[attr][op];
+                    });
+                } else {
+                    resObj['filter[' + attr + ']'] = obj.filter[attr];
+                }
+            });
+        }
+        if (Array.isArray(obj.include)) {
+            var _genIncludeParam = this.genIncludeParam(obj.include),
+                key = _genIncludeParam.key,
+                value = _genIncludeParam.value;
+
+            resObj[key] = value;
+        }
+        if (lodash_isplainobject(obj.sort)) {
+            var _genSortParam = this.genSortParam(obj.sort),
+                _key = _genSortParam.key,
+                _value = _genSortParam.value;
+
+            resObj[_key] = _value;
+        }
+        if (lodash_isplainobject(obj.page)) {
+            if (typeof obj.page.number !== "undefined") {
+                resObj['page[number]'] = obj.page.number;
+            }
+            if (typeof obj.page.size !== "undefined") {
+                resObj['page[size]'] = obj.page.size;
+            }
+        }
+        /*
+        if (typeof obj.skip === 'numeric' && typeof obj.limit === 'numeric' && obj.limit > 0){
+          resObj[ `page[size]` ] = obj.page.limit;
+          resObj[ `page[number]` ] = Math.floor(obj.skip / obj.page.limit) + 1;
+        }
+        */
+        Object.keys(obj).forEach(function (attr) {
+            if (['filter', 'include', 'sort', 'page' /*, 'skip', 'limit'*/].indexOf(attr) < 0) {
+                if (lodash_isplainobject(obj[attr])) {
+                    Object.keys(obj[attr]).forEach(function (op) {
+                        resObj[attr + '[' + op + ']'] = obj[attr][op];
+                    });
+                } else {
+                    resObj[attr] = obj[attr].toString();
+                }
+            }
+        });
+        return objToQueryString(resObj);
     }
 
-    var restClient = {
-      headers: {},
-      baseUrl: '',
-      requestMethod: function requestMethod() {
-        return Promise.resolve({});
-      },
+    var RestClient = function () {
+        function RestClient() {
+            _classCallCheck(this, RestClient);
 
-      config: function config(_ref) {
-        var headers = _ref.headers,
-            baseUrl = _ref.baseUrl,
-            addHeaders = _ref.addHeaders,
-            requestMethod = _ref.requestMethod;
-
-        if (headers) {
-          this.headers = headers;
+            this.headers = {};
+            this.baseUrl = '';
         }
-        if (addHeaders) {
-          this.headers = Object.assign({}, this.headers, addHeaders);
-        }
-        if (baseUrl) {
-          this.baseUrl = baseUrl;
-        }
-        if (requestMethod) {
-          this.requestMethod = requestMethod;
-        }
-      },
-      request: function request(_ref2) {
-        var url = _ref2.url,
-            baseUrl = _ref2.baseUrl,
-            path = _ref2.path,
-            query = _ref2.query,
-            method = _ref2.method,
-            _ref2$headers = _ref2.headers,
-            headers = _ref2$headers === undefined ? {} : _ref2$headers,
-            bodyJSObject = _ref2.bodyJSObject;
 
-        var urlFetch = url ? url : (baseUrl ? baseUrl : this.baseUrl) + path;
-        query = isPlainObject(query) ? objAPIToQueryString(query) : isString(query) ? query : undefined;
-        if (query) {
-          urlFetch += '?' + query;
-        }
-        return this.requestMethod({ url: urlFetch,
-          method: method,
-          headers: Object.assign({}, this.headers, headers),
-          bodyJSObject: bodyJSObject });
-      },
-      get: function get(model, idOrPath, query) {
-        var realPath = '';
-        realPath = '/' + model + '/' + idOrPath;
-        return this.request({
-          path: realPath,
-          query: isPlainObject(query) ? objAPIToQueryString(query) : isString(query) ? query : undefined,
-          method: 'get'
-        });
-      },
-      post: function post(model, dataOrAction) {
-        var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+        _createClass(RestClient, [{
+            key: 'config',
+            value: function config(_ref) {
+                var headers = _ref.headers,
+                    baseUrl = _ref.baseUrl,
+                    _ref$addHeaders = _ref.addHeaders,
+                    addHeaders = _ref$addHeaders === undefined ? null : _ref$addHeaders,
+                    requestMethod = _ref.requestMethod,
+                    _ref$genQueryStringFu = _ref.genQueryStringFunctions,
+                    genQueryStringFunctions = _ref$genQueryStringFu === undefined ? undefined : _ref$genQueryStringFu;
 
-        var realPath = '';
-        var realData = null;
-        if (data) {
-          realPath = '/' + model + '/' + dataOrAction;
-          realData = data;
-        } else {
-          realPath = '/' + model;
-          realData = dataOrAction;
-        }
-        return this.request({ path: realPath, method: 'post', bodyJSObject: realData });
-      },
-      put: function put(model, idOrPath) {
-        var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+                if (headers) {
+                    this.headers = headers;
+                }
+                if (addHeaders) {
+                    this.headers = Object.assign({}, this.headers, addHeaders);
+                }
+                if (baseUrl) {
+                    this.baseUrl = baseUrl;
+                }
+                if (requestMethod) {
+                    this.requestMethod = requestMethod;
+                }
+                this.genSortParam = genSortParam;
+                this.genIncludeParam = genIncludeParam;
+                if ((typeof genQueryStringFunctions === 'undefined' ? 'undefined' : _typeof$e(genQueryStringFunctions)) === 'object') {
+                    if (typeof genQueryStringFunctions.genSortParam === 'function') {
+                        this.genSortParam = genQueryStringFunctions.genSortParam;
+                    }
+                    if (typeof genQueryStringFunctions.genIncludeParam === 'function') {
+                        this.genIncludeParam = genQueryStringFunctions.genIncludeParam;
+                    }
+                }
+            }
+        }, {
+            key: 'objAPIToQueryString',
+            value: function objAPIToQueryString(obj) {
+                return _objAPIToQueryString.bind(this)(obj);
+            }
+        }, {
+            key: 'request',
+            value: function request(_ref2) {
+                var _ref2$url = _ref2.url,
+                    url = _ref2$url === undefined ? null : _ref2$url,
+                    _ref2$baseUrl = _ref2.baseUrl,
+                    baseUrl = _ref2$baseUrl === undefined ? null : _ref2$baseUrl,
+                    path = _ref2.path,
+                    _ref2$query = _ref2.query,
+                    query = _ref2$query === undefined ? undefined : _ref2$query,
+                    method = _ref2.method,
+                    _ref2$headers = _ref2.headers,
+                    headers = _ref2$headers === undefined ? {} : _ref2$headers,
+                    _ref2$bodyJSObject = _ref2.bodyJSObject,
+                    bodyJSObject = _ref2$bodyJSObject === undefined ? undefined : _ref2$bodyJSObject;
 
-        var realPath = '';
-        realPath = '/' + model + '/' + idOrPath;
-        return this.request({ path: realPath, method: 'put', bodyJSObject: data });
-      },
-      put_not_id: function put_not_id(model) {
-        var data = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+                var urlFetch = url ? url : (baseUrl ? baseUrl : this.baseUrl) + path;
+                query = lodash_isplainobject(query) ? this.objAPIToQueryString(query) : isString(query) ? query : undefined;
+                if (query) {
+                    urlFetch += '?' + query;
+                }
+                return this.requestMethod({ url: urlFetch,
+                    method: method,
+                    headers: Object.assign({}, this.headers, headers),
+                    bodyJSObject: bodyJSObject
+                });
+            }
+        }, {
+            key: 'get',
+            value: function get(model, idOrPath, query) {
+                var realPath = '';
+                realPath = '/' + model + '/' + idOrPath;
+                return this.request({
+                    path: realPath,
+                    query: lodash_isplainobject(query) ? this.objAPIToQueryString(query) : isString(query) ? query : undefined,
+                    method: 'get'
+                });
+            }
+        }, {
+            key: 'post',
+            value: function post(model, dataOrAction) {
+                var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
 
-        var realPath = '';
-        realPath = '/' + model;
-        return this.request({ path: realPath, method: 'put', bodyJSObject: data });
-      },
-      delete: function _delete(model, idOrPath) {
-        var realPath = '';
-        realPath = '/' + model + '/' + idOrPath;
-        return this.request({
-          path: realPath,
-          method: 'delete'
-        });
-      },
-      find: function find(model, query) {
-        var realPath = '';
-        realPath = '/' + model;
-        return this.request({
-          path: realPath,
-          query: isPlainObject(query) ? objAPIToQueryString(query) : isString(query) ? query : undefined,
-          method: 'get'
-        });
-      },
-      findOne: function findOne(model, id, query) {
-        var realPath = '';
-        realPath = '/' + model + '/' + id;
-        return this.request({
-          path: realPath,
-          query: isPlainObject(query) ? objAPIToQueryString(query) : isString(query) ? query : undefined,
-          method: 'get' });
-      },
-      create: function create(model, data) {
-        return this.post(model, data);
-      },
-      update: function update(model, id, data) {
-        return this.put(model, id, data);
-      },
-      remove: function remove(model, id) {
-        return this.delete(model, id);
-      }
-    };
+                var realPath = '';
+                var realData = null;
+                if (data) {
+                    realPath = '/' + model + '/' + dataOrAction;
+                    realData = data;
+                } else {
+                    realPath = '/' + model;
+                    realData = dataOrAction;
+                }
+                return this.request({ path: realPath, method: 'post', bodyJSObject: realData });
+            }
+        }, {
+            key: 'put',
+            value: function put(model, idOrPath) {
+                var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
 
-    {
-      if (module.exports) {
-        exports = module.exports = restClient;
-      }
-      exports.restClient = restClient;
-    }
-  }).call(commonjsGlobal);
+                var realPath = '';
+                realPath = '/' + model + '/' + idOrPath;
+                return this.request({ path: realPath, method: 'put', bodyJSObject: data });
+            }
+        }, {
+            key: 'put_not_id',
+            value: function put_not_id(model) {
+                var data = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+                var realPath = '';
+                realPath = '/' + model;
+                return this.request({ path: realPath, method: 'put', bodyJSObject: data });
+            }
+        }, {
+            key: 'delete',
+            value: function _delete(model, idOrPath) {
+                var realPath = '';
+                realPath = '/' + model + '/' + idOrPath;
+                return this.request({
+                    path: realPath,
+                    method: 'delete'
+                });
+            }
+        }, {
+            key: 'find',
+            value: function find(model) {
+                var query = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+
+                var realPath = '';
+                realPath = '/' + model;
+                return this.request({
+                    path: realPath,
+                    query: lodash_isplainobject(query) ? this.objAPIToQueryString(query) : isString(query) ? query : undefined,
+                    method: 'get'
+                });
+            }
+        }, {
+            key: 'findOne',
+            value: function findOne(model, id, query) {
+                var realPath = '';
+                realPath = '/' + model + '/' + id;
+                return this.request({
+                    path: realPath,
+                    query: lodash_isplainobject(query) ? this.objAPIToQueryString(query) : isString(query) ? query : undefined,
+                    method: 'get'
+                });
+            }
+        }, {
+            key: 'create',
+            value: function create(model, data) {
+                return this.post(model, data);
+            }
+        }, {
+            key: 'update',
+            value: function update(model, id, data) {
+                return this.put(model, id, data);
+            }
+        }, {
+            key: 'remove',
+            value: function remove(model, id) {
+                return this.delete(model, id);
+            }
+        }]);
+
+        return RestClient;
+    }();
+
+    exports.default = RestClient;
+    
 });
-var flexRestClient_1 = flexRestClient.restClient;
+
+var RestClient = unwrapExports(flexRestClient);
 
 function checkHttpStatus(response) {
   if (response.status >= 200 && response.status < 300) {
@@ -10345,28 +10397,48 @@ function makeRequest(_ref) {
   });
 }
 
-flexRestClient.config({
+var restClient = new RestClient();
+restClient.config({
   baseUrl: '',
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   },
-  requestMethod: makeRequest
+  requestMethod: makeRequest,
+  genQueryStringFunctions: {
+    genSortParam: function genSortParam(obj) {
+      var sortArr = [];
+      Object.keys(obj).forEach(function (attr) {
+        sortArr.push(attr + ' ' + (obj[attr] != 1 ? 'DESC' : 'ASC'));
+      });
+      return {
+        key: 'sort',
+        value: sortArr.join(',')
+      };
+    },
+    genIncludeParam: function genIncludeParam(arr) {
+      return {
+        key: 'populate',
+        value: arr.join(',')
+      };
+    }
+  }
+
 });
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$1 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$1(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Auth = function () {
   function Auth(restClient, io) {
-    _classCallCheck(this, Auth);
+    _classCallCheck$1(this, Auth);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass(Auth, [{
+  _createClass$1(Auth, [{
     key: "login",
     value: function login(data, cb) {
       var _this = this;
@@ -10400,6 +10472,7 @@ var Auth = function () {
         headers["x-app"] = appId;
       }
       this.io.sails.initialConnectionHeaders = headers;
+      this.io.socket.headers = headers;
       this.restClient.headers = Object.assign({}, this.restClient.headers, headers);
       cb({ status: 'ok' }, null);
     }
@@ -10408,18 +10481,18 @@ var Auth = function () {
   return Auth;
 }();
 
-var _createClass$1 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$2 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$1(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$2(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Admin = function () {
   function Admin(restClient) {
-    _classCallCheck$1(this, Admin);
+    _classCallCheck$2(this, Admin);
 
     this.restClient = restClient;
   }
 
-  _createClass$1(Admin, [{
+  _createClass$2(Admin, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/admin', method: 'get', query: query }).then(function (responce) {
@@ -10504,18 +10577,18 @@ var Admin = function () {
   return Admin;
 }();
 
-var _createClass$2 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$3 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$2(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$3(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Attribute = function () {
   function Attribute(restClient) {
-    _classCallCheck$2(this, Attribute);
+    _classCallCheck$3(this, Attribute);
 
     this.restClient = restClient;
   }
 
-  _createClass$2(Attribute, [{
+  _createClass$3(Attribute, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/attribute', method: 'get', query: query }).then(function (responce) {
@@ -10529,19 +10602,19 @@ var Attribute = function () {
   return Attribute;
 }();
 
-var _createClass$3 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$4 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$3(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$4(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var User = function () {
   function User(restClient, io) {
-    _classCallCheck$3(this, User);
+    _classCallCheck$4(this, User);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass$3(User, [{
+  _createClass$4(User, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/user', method: 'get', query: query }).then(function (responce) {
@@ -10703,19 +10776,19 @@ var User = function () {
   return User;
 }();
 
-var _createClass$4 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$5 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$4(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$5(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Tag = function () {
   function Tag(restClient, io) {
-    _classCallCheck$4(this, Tag);
+    _classCallCheck$5(this, Tag);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass$4(Tag, [{
+  _createClass$5(Tag, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/tag', method: 'get', query: query }).then(function (responce) {
@@ -10738,19 +10811,19 @@ var Tag = function () {
   return Tag;
 }();
 
-var _createClass$5 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$6 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$5(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$6(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Inbox = function () {
   function Inbox(restClient, io) {
-    _classCallCheck$5(this, Inbox);
+    _classCallCheck$6(this, Inbox);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass$5(Inbox, [{
+  _createClass$6(Inbox, [{
     key: 'getUser',
     value: function getUser(id, cb) {
       return this.restClient.request({ path: '/user?id=' + id, method: 'get' }).then(function (responce) {
@@ -10885,19 +10958,19 @@ var Inbox = function () {
   return Inbox;
 }();
 
-var _createClass$6 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$7 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$6(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$7(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Conversation = function () {
   function Conversation(restClient, io) {
-    _classCallCheck$6(this, Conversation);
+    _classCallCheck$7(this, Conversation);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass$6(Conversation, [{
+  _createClass$7(Conversation, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/conversation', method: 'get', query: query }).then(function (responce) {
@@ -10921,19 +10994,19 @@ var Conversation = function () {
   return Conversation;
 }();
 
-var _createClass$7 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$8 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$7(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$8(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Message = function () {
   function Message(restClient, io) {
-    _classCallCheck$7(this, Message);
+    _classCallCheck$8(this, Message);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass$7(Message, [{
+  _createClass$8(Message, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/message', method: 'get', query: query }).then(function (responce) {
@@ -10947,19 +11020,19 @@ var Message = function () {
   return Message;
 }();
 
-var _createClass$8 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$9 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$8(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$9(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var App = function () {
   function App(restClient, io) {
-    _classCallCheck$8(this, App);
+    _classCallCheck$9(this, App);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass$8(App, [{
+  _createClass$9(App, [{
     key: 'getInboxes',
     value: function getInboxes(query, cb) {
       this.restClient.request({ path: '/app/inboxes', method: 'get', query: query }).then(function (responce) {
@@ -10973,19 +11046,19 @@ var App = function () {
   return App;
 }();
 
-var _createClass$9 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$a = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$9(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$a(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Segments = function () {
   function Segments(restClient, io) {
-    _classCallCheck$9(this, Segments);
+    _classCallCheck$a(this, Segments);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass$9(Segments, [{
+  _createClass$a(Segments, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/segment', method: 'get', query: query }).then(function (responce) {
@@ -11034,19 +11107,19 @@ var Segments = function () {
   return Segments;
 }();
 
-var _createClass$a = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$b = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$a(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$b(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Team = function () {
   function Team(restClient, io) {
-    _classCallCheck$a(this, Team);
+    _classCallCheck$b(this, Team);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass$a(Team, [{
+  _createClass$b(Team, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/team', method: 'get', query: query }).then(function (responce) {
@@ -11069,19 +11142,19 @@ var Team = function () {
   return Team;
 }();
 
-var _createClass$b = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$c = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$b(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$c(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Event = function () {
   function Event(restClient, io) {
-    _classCallCheck$b(this, Event);
+    _classCallCheck$c(this, Event);
 
     this.restClient = restClient;
     this.io = io;
   }
 
-  _createClass$b(Event, [{
+  _createClass$c(Event, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/event', method: 'get', query: query }).then(function (responce) {
@@ -11095,18 +11168,18 @@ var Event = function () {
   return Event;
 }();
 
-var _createClass$c = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$d = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$c(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$d(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Company = function () {
   function Company(restClient) {
-    _classCallCheck$c(this, Company);
+    _classCallCheck$d(this, Company);
 
     this.restClient = restClient;
   }
 
-  _createClass$c(Company, [{
+  _createClass$d(Company, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/company', method: 'get', query: query }).then(function (responce) {
@@ -11151,18 +11224,18 @@ var Company = function () {
   return Company;
 }();
 
-var _createClass$d = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$e = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$d(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$e(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var ManualMessage = function () {
   function ManualMessage(restClient) {
-    _classCallCheck$d(this, ManualMessage);
+    _classCallCheck$e(this, ManualMessage);
 
     this.restClient = restClient;
   }
 
-  _createClass$d(ManualMessage, [{
+  _createClass$e(ManualMessage, [{
     key: 'find',
     value: function find(query, cb) {
       this.restClient.request({ path: '/newmessage', method: 'get', query: query }).then(function (responce) {
@@ -11172,9 +11245,27 @@ var ManualMessage = function () {
       });
     }
   }, {
+    key: 'get',
+    value: function get(id, cb) {
+      this.restClient.request({ path: '/newmessage/' + id, method: 'get' }).then(function (responce) {
+        cb(responce, null);
+      }).catch(function (error) {
+        cb(null, error);
+      });
+    }
+  }, {
     key: 'create',
     value: function create(data, cb) {
       this.restClient.request({ path: '/newmessage', method: 'post', bodyJSObject: data }).then(function (responce) {
+        cb(responce, null);
+      }).catch(function (error) {
+        cb(null, error);
+      });
+    }
+  }, {
+    key: 'update',
+    value: function update(id, data, cb) {
+      this.restClient.request({ path: '/newmessage/' + id, method: 'put', bodyJSObject: data }).then(function (responce) {
         cb(responce, null);
       }).catch(function (error) {
         cb(null, error);
@@ -11257,23 +11348,24 @@ var ManualMessage = function () {
   return ManualMessage;
 }();
 
-var _createClass$e = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$f = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$e(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$f(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var WidgetSDK = function () {
   function WidgetSDK(_ref) {
     var url = _ref.url;
 
-    _classCallCheck$e(this, WidgetSDK);
+    _classCallCheck$f(this, WidgetSDK);
 
+    console.log('@@@@');
     var io = sails_io(lib$1);
     io.sails.url = url;
     io.sails.useCORSRouteToGetCookie = false;
     io.sails.autoConnect = true;
     this.io = io;
-    flexRestClient.baseUrl = url + '/api';
-    this.restClient = flexRestClient;
+    restClient.baseUrl = url + '/api';
+    this.restClient = restClient;
     this.options = { urlApi: url };
     this.onMessage = function () {};
     this.inited = false;
@@ -11295,7 +11387,7 @@ var WidgetSDK = function () {
     this.manual_message = new ManualMessage(this.restClient, this.io);
   }
 
-  _createClass$e(WidgetSDK, [{
+  _createClass$f(WidgetSDK, [{
     key: 'init',
     value: function init(_ref2, cb) {
       var token = _ref2.token,

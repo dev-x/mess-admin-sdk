@@ -29,6 +29,7 @@ export default class Auth {
       headers["x-app"] = appId;
     }
     this.io.sails.initialConnectionHeaders = headers;
+    this.io.socket.headers = headers;
     this.restClient.headers = Object.assign({}, this.restClient.headers, headers);
     cb({ status: 'ok' }, null);
   }

@@ -8,7 +8,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "flex-rest-client": "^1.0.0",
+    "flex-rest-client": "^1.0.3",
     "sails.io.js": "1.2.1",
     "socket.io-client": "1.7.4"
   },

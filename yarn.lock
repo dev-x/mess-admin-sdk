@@ -1905,9 +1905,9 @@ flatten@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/flatten/-/flatten-1.0.2.tgz#dae46a9d78fbe25292258cc1e780a41d95c03782"
 
-flex-rest-client@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/flex-rest-client/-/flex-rest-client-1.0.0.tgz#c0a491e192372f11493d809369b251dacc9ed9f7"
+flex-rest-client@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/flex-rest-client/-/flex-rest-client-1.0.3.tgz#6df0b2d831d319ccb35f1f14b3acfc592260d67c"
   dependencies:
     lodash.isplainobject "^4.0.6"
 
