@@ -1,6 +1,6 @@
 {
   "name": "mess-admin-sdk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "dist/cjs/bundle.js",
   "module": "index.js",
   "files": [

@@ -16,12 +16,10 @@ import Team from './component/team'
 import Event from './component/event'
 import Company from './component/company'
 import ManualMessage from './component/manual_message'
-
+import Forms from './component/forms'
 
 export default class WidgetSDK {
   constructor({ url }) {
-    
-    console.log('@@@@');
     const io = sailsIo(sailsIoClient);
     io.sails.url = url;
     io.sails.useCORSRouteToGetCookie = false
@@ -48,7 +46,7 @@ export default class WidgetSDK {
     this.event = new Event(this.restClient, this.io);
     this.message = new Message(this.restClient, this.io);
     this.manual_message = new ManualMessage(this.restClient, this.io);
-
+    this.forms = new Forms(this.restClient, this.io);
   }
 
   init({ token, email, headers }, cb) {
@@ -76,15 +74,15 @@ export default class WidgetSDK {
       own_headers = headers
     }
 
-
-    this.io.sails.initialConnectionHeaders = headers;
-    this.io.socket.headers = headers
+    this.io.sails.initialConnectionHeaders = own_headers;
+    this.io.socket.headers = own_headers
     this.io.socket.request({
       method: 'get',
       url: '/api/admin/socket_init',
-      headers: own_headers
-    }, function (body, response) {
-      console.log('CONNECT : Server responded with status code ' + response.statusCode + ' and data: ', body);
+    }, (body, response) => {
+      console.log('INIT : Server responded with status code ' + response.statusCode + ' and data: ', body);
+      console.log(this.io.socket);
+      console.log(this.io.sails);
       if (response.statusCode == 200) {
         cb(body);
       } else {

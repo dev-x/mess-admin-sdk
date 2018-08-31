@@ -30,6 +30,7 @@ export default class Auth {
     }
     this.io.sails.initialConnectionHeaders = headers;
     this.io.socket.headers = headers;
+    this.io.socket.extraHeaders = headers;
     this.restClient.headers = Object.assign({}, this.restClient.headers, headers);
     cb({ status: 'ok' }, null);
   }

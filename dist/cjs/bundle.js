@@ -10473,6 +10473,7 @@ var Auth = function () {
       }
       this.io.sails.initialConnectionHeaders = headers;
       this.io.socket.headers = headers;
+      this.io.socket.extraHeaders = headers;
       this.restClient.headers = Object.assign({}, this.restClient.headers, headers);
       cb({ status: 'ok' }, null);
     }
@@ -11352,13 +11353,74 @@ var _createClass$f = function () { function defineProperties(target, props) { fo
 
 function _classCallCheck$f(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var Forms = function () {
+  function Forms(restClient, io) {
+    _classCallCheck$f(this, Forms);
+
+    this.restClient = restClient;
+    this.io = io;
+  }
+
+  _createClass$f(Forms, [{
+    key: 'find',
+    value: function find(query, cb) {
+      this.restClient.request({ path: '/form', method: 'get', query: query }).then(function (responce) {
+        cb(responce, null);
+      }).catch(function (error) {
+        cb(null, error);
+      });
+    }
+  }, {
+    key: 'get',
+    value: function get(id, cb) {
+      this.restClient.request({ path: '/form/' + id, method: 'get' }).then(function (responce) {
+        cb(responce, null);
+      }).catch(function (error) {
+        cb(null, error);
+      });
+    }
+  }, {
+    key: 'create',
+    value: function create(bodyJSObject, cb) {
+      this.restClient.request({ path: '/form', method: 'post', bodyJSObject: bodyJSObject }).then(function (responce) {
+        cb(responce, null);
+      }).catch(function (error) {
+        cb(null, error);
+      });
+    }
+  }, {
+    key: 'update',
+    value: function update(bodyJSObject, cb) {
+      this.restClient.request({ path: '/form/' + bodyJSObject.id, method: 'put', bodyJSObject: bodyJSObject }).then(function (responce) {
+        cb(responce, null);
+      }).catch(function (error) {
+        cb(null, error);
+      });
+    }
+  }, {
+    key: 'delete',
+    value: function _delete(id, cb) {
+      this.restClient.request({ path: '/form/' + id, method: 'delete' }).then(function (responce) {
+        cb(responce, null);
+      }).catch(function (error) {
+        cb(null, error);
+      });
+    }
+  }]);
+
+  return Forms;
+}();
+
+var _createClass$g = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck$g(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 var WidgetSDK = function () {
   function WidgetSDK(_ref) {
     var url = _ref.url;
 
-    _classCallCheck$f(this, WidgetSDK);
+    _classCallCheck$g(this, WidgetSDK);
 
-    console.log('@@@@');
     var io = sails_io(lib$1);
     io.sails.url = url;
     io.sails.useCORSRouteToGetCookie = false;
@@ -11385,11 +11447,14 @@ var WidgetSDK = function () {
     this.event = new Event(this.restClient, this.io);
     this.message = new Message(this.restClient, this.io);
     this.manual_message = new ManualMessage(this.restClient, this.io);
+    this.forms = new Forms(this.restClient, this.io);
   }
 
-  _createClass$f(WidgetSDK, [{
+  _createClass$g(WidgetSDK, [{
     key: 'init',
     value: function init(_ref2, cb) {
+      var _this = this;
+
       var token = _ref2.token,
           email = _ref2.email,
           headers = _ref2.headers;
@@ -11418,14 +11483,15 @@ var WidgetSDK = function () {
         own_headers = headers;
       }
 
-      this.io.sails.initialConnectionHeaders = headers;
-      this.io.socket.headers = headers;
+      this.io.sails.initialConnectionHeaders = own_headers;
+      this.io.socket.headers = own_headers;
       this.io.socket.request({
         method: 'get',
-        url: '/api/admin/socket_init',
-        headers: own_headers
+        url: '/api/admin/socket_init'
       }, function (body, response) {
-        console.log('CONNECT : Server responded with status code ' + response.statusCode + ' and data: ', body);
+        console.log('INIT : Server responded with status code ' + response.statusCode + ' and data: ', body);
+        console.log(_this.io.socket);
+        console.log(_this.io.sails);
         if (response.statusCode == 200) {
           cb(body);
         } else {
