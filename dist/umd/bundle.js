@@ -11046,6 +11046,24 @@
 	        cb(null, error);
 	      });
 	    }
+	  }, {
+	    key: 'getAppearanceSettings',
+	    value: function getAppearanceSettings(cb) {
+	      this.restClient.request({ path: '/app/appearance_settings', method: 'get' }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'setAppearanceSettings',
+	    value: function setAppearanceSettings(bodyJSObject, cb) {
+	      this.restClient.request({ path: '/app/appearance_settings', method: 'post', bodyJSObject: bodyJSObject }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
 	  }]);
 
 	  return App;

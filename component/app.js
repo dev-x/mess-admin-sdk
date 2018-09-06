@@ -13,5 +13,21 @@ export default class App {
     })
   }
 
+  getAppearanceSettings(cb) {
+    this.restClient.request({ path: '/app/appearance_settings', method: 'get' }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    })
+  }
+
+  setAppearanceSettings(bodyJSObject, cb) {
+    this.restClient.request({ path: '/app/appearance_settings', method: 'post', bodyJSObject }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    })
+  }
+
 
 }
