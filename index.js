@@ -17,6 +17,8 @@ import Event from './component/event'
 import Company from './component/company'
 import ManualMessage from './component/manual_message'
 import Forms from './component/forms'
+import Scenarios from './component/scenarios'
+import Calls from './component/calls'
 
 export default class WidgetSDK {
   constructor({ url }) {
@@ -47,6 +49,8 @@ export default class WidgetSDK {
     this.message = new Message(this.restClient, this.io);
     this.manual_message = new ManualMessage(this.restClient, this.io);
     this.forms = new Forms(this.restClient, this.io);
+    this.scenarios = new Scenarios(this.restClient, this.io)
+    this.calls = new Calls(this.restClient, this.io)
   }
 
   init({ token, email, headers }, cb) {
@@ -81,8 +85,6 @@ export default class WidgetSDK {
       url: '/api/admin/socket_init',
     }, (body, response) => {
       console.log('INIT : Server responded with status code ' + response.statusCode + ' and data: ', body);
-      console.log(this.io.socket);
-      console.log(this.io.sails);
       if (response.statusCode == 200) {
         cb(body);
       } else {

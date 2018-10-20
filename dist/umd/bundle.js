@@ -6209,535 +6209,11 @@
 	yeast.decode = decode$1;
 	var yeast_1 = yeast;
 
-	var _typeof$8 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	/**
-	 * Helpers.
-	 */
-
-	var s$2 = 1000;
-	var m$2 = s$2 * 60;
-	var h$2 = m$2 * 60;
-	var d$2 = h$2 * 24;
-	var y$2 = d$2 * 365.25;
-
-	/**
-	 * Parse or format the given `val`.
-	 *
-	 * Options:
-	 *
-	 *  - `long` verbose formatting [false]
-	 *
-	 * @param {String|Number} val
-	 * @param {Object} options
-	 * @throws {Error} throw an error if val is not a non-empty string or a number
-	 * @return {String|Number}
-	 * @api public
-	 */
-
-	var ms$2 = function ms(val, options) {
-	  options = options || {};
-	  var type = typeof val === 'undefined' ? 'undefined' : _typeof$8(val);
-	  if (type === 'string' && val.length > 0) {
-	    return parse$2(val);
-	  } else if (type === 'number' && isNaN(val) === false) {
-	    return options.long ? fmtLong$1(val) : fmtShort$1(val);
-	  }
-	  throw new Error('val is not a non-empty string or a valid number. val=' + JSON.stringify(val));
-	};
-
-	/**
-	 * Parse the given `str` and return milliseconds.
-	 *
-	 * @param {String} str
-	 * @return {Number}
-	 * @api private
-	 */
-
-	function parse$2(str) {
-	  str = String(str);
-	  if (str.length > 10000) {
-	    return;
-	  }
-	  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(str);
-	  if (!match) {
-	    return;
-	  }
-	  var n = parseFloat(match[1]);
-	  var type = (match[2] || 'ms').toLowerCase();
-	  switch (type) {
-	    case 'years':
-	    case 'year':
-	    case 'yrs':
-	    case 'yr':
-	    case 'y':
-	      return n * y$2;
-	    case 'days':
-	    case 'day':
-	    case 'd':
-	      return n * d$2;
-	    case 'hours':
-	    case 'hour':
-	    case 'hrs':
-	    case 'hr':
-	    case 'h':
-	      return n * h$2;
-	    case 'minutes':
-	    case 'minute':
-	    case 'mins':
-	    case 'min':
-	    case 'm':
-	      return n * m$2;
-	    case 'seconds':
-	    case 'second':
-	    case 'secs':
-	    case 'sec':
-	    case 's':
-	      return n * s$2;
-	    case 'milliseconds':
-	    case 'millisecond':
-	    case 'msecs':
-	    case 'msec':
-	    case 'ms':
-	      return n;
-	    default:
-	      return undefined;
-	  }
-	}
-
-	/**
-	 * Short format for `ms`.
-	 *
-	 * @param {Number} ms
-	 * @return {String}
-	 * @api private
-	 */
-
-	function fmtShort$1(ms) {
-	  if (ms >= d$2) {
-	    return Math.round(ms / d$2) + 'd';
-	  }
-	  if (ms >= h$2) {
-	    return Math.round(ms / h$2) + 'h';
-	  }
-	  if (ms >= m$2) {
-	    return Math.round(ms / m$2) + 'm';
-	  }
-	  if (ms >= s$2) {
-	    return Math.round(ms / s$2) + 's';
-	  }
-	  return ms + 'ms';
-	}
-
-	/**
-	 * Long format for `ms`.
-	 *
-	 * @param {Number} ms
-	 * @return {String}
-	 * @api private
-	 */
-
-	function fmtLong$1(ms) {
-	  return plural$2(ms, d$2, 'day') || plural$2(ms, h$2, 'hour') || plural$2(ms, m$2, 'minute') || plural$2(ms, s$2, 'second') || ms + ' ms';
-	}
-
-	/**
-	 * Pluralization helper.
-	 */
-
-	function plural$2(ms, n, name) {
-	  if (ms < n) {
-	    return;
-	  }
-	  if (ms < n * 1.5) {
-	    return Math.floor(ms / n) + ' ' + name;
-	  }
-	  return Math.ceil(ms / n) + ' ' + name + 's';
-	}
-
-	var debug_1$2 = createCommonjsModule(function (module, exports) {
-	  /**
-	   * This is the common logic for both the Node.js and web browser
-	   * implementations of `debug()`.
-	   *
-	   * Expose `debug()` as the module.
-	   */
-
-	  exports = module.exports = debug.debug = debug;
-	  exports.coerce = coerce;
-	  exports.disable = disable;
-	  exports.enable = enable;
-	  exports.enabled = enabled;
-	  exports.humanize = ms$2;
-
-	  /**
-	   * The currently active debug mode names, and names to skip.
-	   */
-
-	  exports.names = [];
-	  exports.skips = [];
-
-	  /**
-	   * Map of special "%n" handling functions, for the debug "format" argument.
-	   *
-	   * Valid key names are a single, lowercased letter, i.e. "n".
-	   */
-
-	  exports.formatters = {};
-
-	  /**
-	   * Previously assigned color.
-	   */
-
-	  var prevColor = 0;
-
-	  /**
-	   * Previous log timestamp.
-	   */
-
-	  var prevTime;
-
-	  /**
-	   * Select a color.
-	   *
-	   * @return {Number}
-	   * @api private
-	   */
-
-	  function selectColor() {
-	    return exports.colors[prevColor++ % exports.colors.length];
-	  }
-
-	  /**
-	   * Create a debugger with the given `namespace`.
-	   *
-	   * @param {String} namespace
-	   * @return {Function}
-	   * @api public
-	   */
-
-	  function debug(namespace) {
-
-	    // define the `disabled` version
-	    function disabled() {}
-	    disabled.enabled = false;
-
-	    // define the `enabled` version
-	    function enabled() {
-
-	      var self = enabled;
-
-	      // set `diff` timestamp
-	      var curr = +new Date();
-	      var ms = curr - (prevTime || curr);
-	      self.diff = ms;
-	      self.prev = prevTime;
-	      self.curr = curr;
-	      prevTime = curr;
-
-	      // add the `color` if not set
-	      if (null == self.useColors) self.useColors = exports.useColors();
-	      if (null == self.color && self.useColors) self.color = selectColor();
-
-	      var args = new Array(arguments.length);
-	      for (var i = 0; i < args.length; i++) {
-	        args[i] = arguments[i];
-	      }
-
-	      args[0] = exports.coerce(args[0]);
-
-	      if ('string' !== typeof args[0]) {
-	        // anything else let's inspect with %o
-	        args = ['%o'].concat(args);
-	      }
-
-	      // apply any `formatters` transformations
-	      var index = 0;
-	      args[0] = args[0].replace(/%([a-z%])/g, function (match, format) {
-	        // if we encounter an escaped % then don't increase the array index
-	        if (match === '%%') return match;
-	        index++;
-	        var formatter = exports.formatters[format];
-	        if ('function' === typeof formatter) {
-	          var val = args[index];
-	          match = formatter.call(self, val);
-
-	          // now we need to remove `args[index]` since it's inlined in the `format`
-	          args.splice(index, 1);
-	          index--;
-	        }
-	        return match;
-	      });
-
-	      // apply env-specific formatting
-	      args = exports.formatArgs.apply(self, args);
-
-	      var logFn = enabled.log || exports.log || console.log.bind(console);
-	      logFn.apply(self, args);
-	    }
-	    enabled.enabled = true;
-
-	    var fn = exports.enabled(namespace) ? enabled : disabled;
-
-	    fn.namespace = namespace;
-
-	    return fn;
-	  }
-
-	  /**
-	   * Enables a debug mode by namespaces. This can include modes
-	   * separated by a colon and wildcards.
-	   *
-	   * @param {String} namespaces
-	   * @api public
-	   */
-
-	  function enable(namespaces) {
-	    exports.save(namespaces);
-
-	    var split = (namespaces || '').split(/[\s,]+/);
-	    var len = split.length;
-
-	    for (var i = 0; i < len; i++) {
-	      if (!split[i]) continue; // ignore empty strings
-	      namespaces = split[i].replace(/[\\^$+?.()|[\]{}]/g, '\\$&').replace(/\*/g, '.*?');
-	      if (namespaces[0] === '-') {
-	        exports.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
-	      } else {
-	        exports.names.push(new RegExp('^' + namespaces + '$'));
-	      }
-	    }
-	  }
-
-	  /**
-	   * Disable debug output.
-	   *
-	   * @api public
-	   */
-
-	  function disable() {
-	    exports.enable('');
-	  }
-
-	  /**
-	   * Returns true if the given mode name is enabled, false otherwise.
-	   *
-	   * @param {String} name
-	   * @return {Boolean}
-	   * @api public
-	   */
-
-	  function enabled(name) {
-	    var i, len;
-	    for (i = 0, len = exports.skips.length; i < len; i++) {
-	      if (exports.skips[i].test(name)) {
-	        return false;
-	      }
-	    }
-	    for (i = 0, len = exports.names.length; i < len; i++) {
-	      if (exports.names[i].test(name)) {
-	        return true;
-	      }
-	    }
-	    return false;
-	  }
-
-	  /**
-	   * Coerce `val`.
-	   *
-	   * @param {Mixed} val
-	   * @return {Mixed}
-	   * @api private
-	   */
-
-	  function coerce(val) {
-	    if (val instanceof Error) return val.stack || val.message;
-	    return val;
-	  }
-	});
-	var debug_2$2 = debug_1$2.coerce;
-	var debug_3$2 = debug_1$2.disable;
-	var debug_4$2 = debug_1$2.enable;
-	var debug_5$2 = debug_1$2.enabled;
-	var debug_6$2 = debug_1$2.humanize;
-	var debug_7$2 = debug_1$2.names;
-	var debug_8$2 = debug_1$2.skips;
-	var debug_9$2 = debug_1$2.formatters;
-
-	var _typeof$9 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	var browser$4 = createCommonjsModule(function (module, exports) {
-	  /**
-	   * This is the web browser implementation of `debug()`.
-	   *
-	   * Expose `debug()` as the module.
-	   */
-
-	  exports = module.exports = debug_1$2;
-	  exports.log = log;
-	  exports.formatArgs = formatArgs;
-	  exports.save = save;
-	  exports.load = load;
-	  exports.useColors = useColors;
-	  exports.storage = 'undefined' != typeof chrome && 'undefined' != typeof chrome.storage ? chrome.storage.local : localstorage();
-
-	  /**
-	   * Colors.
-	   */
-
-	  exports.colors = ['lightseagreen', 'forestgreen', 'goldenrod', 'dodgerblue', 'darkorchid', 'crimson'];
-
-	  /**
-	   * Currently only WebKit-based Web Inspectors, Firefox >= v31,
-	   * and the Firebug extension (any Firefox version) are known
-	   * to support "%c" CSS customizations.
-	   *
-	   * TODO: add a `localStorage` variable to explicitly enable/disable colors
-	   */
-
-	  function useColors() {
-	    // is webkit? http://stackoverflow.com/a/16459606/376773
-	    // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
-	    return typeof document !== 'undefined' && 'WebkitAppearance' in document.documentElement.style ||
-	    // is firebug? http://stackoverflow.com/a/398120/376773
-	    window.console && (console.firebug || console.exception && console.table) ||
-	    // is firefox >= v31?
-	    // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-	    navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31;
-	  }
-
-	  /**
-	   * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
-	   */
-
-	  exports.formatters.j = function (v) {
-	    try {
-	      return JSON.stringify(v);
-	    } catch (err) {
-	      return '[UnexpectedJSONParseError]: ' + err.message;
-	    }
-	  };
-
-	  /**
-	   * Colorize log arguments if enabled.
-	   *
-	   * @api public
-	   */
-
-	  function formatArgs() {
-	    var args = arguments;
-	    var useColors = this.useColors;
-
-	    args[0] = (useColors ? '%c' : '') + this.namespace + (useColors ? ' %c' : ' ') + args[0] + (useColors ? '%c ' : ' ') + '+' + exports.humanize(this.diff);
-
-	    if (!useColors) return args;
-
-	    var c = 'color: ' + this.color;
-	    args = [args[0], c, 'color: inherit'].concat(Array.prototype.slice.call(args, 1));
-
-	    // the final "%c" is somewhat tricky, because there could be other
-	    // arguments passed either before or after the %c, so we need to
-	    // figure out the correct index to insert the CSS into
-	    var index = 0;
-	    var lastC = 0;
-	    args[0].replace(/%[a-z%]/g, function (match) {
-	      if ('%%' === match) return;
-	      index++;
-	      if ('%c' === match) {
-	        // we only are interested in the *last* %c
-	        // (the user may have provided their own)
-	        lastC = index;
-	      }
-	    });
-
-	    args.splice(lastC, 0, c);
-	    return args;
-	  }
-
-	  /**
-	   * Invokes `console.log()` when available.
-	   * No-op when `console.log` is not a "function".
-	   *
-	   * @api public
-	   */
-
-	  function log() {
-	    // this hackery is required for IE8/9, where
-	    // the `console.log` function doesn't have 'apply'
-	    return 'object' === (typeof console === 'undefined' ? 'undefined' : _typeof$9(console)) && console.log && Function.prototype.apply.call(console.log, console, arguments);
-	  }
-
-	  /**
-	   * Save `namespaces`.
-	   *
-	   * @param {String} namespaces
-	   * @api private
-	   */
-
-	  function save(namespaces) {
-	    try {
-	      if (null == namespaces) {
-	        exports.storage.removeItem('debug');
-	      } else {
-	        exports.storage.debug = namespaces;
-	      }
-	    } catch (e) {}
-	  }
-
-	  /**
-	   * Load `namespaces`.
-	   *
-	   * @return {String} returns the previously persisted debug modes
-	   * @api private
-	   */
-
-	  function load() {
-	    try {
-	      return exports.storage.debug;
-	    } catch (e) {}
-
-	    // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
-	    if (typeof process !== 'undefined' && 'env' in process) {
-	      return process.env.DEBUG;
-	    }
-	  }
-
-	  /**
-	   * Enable namespaces listed in `localStorage.debug` initially.
-	   */
-
-	  exports.enable(load());
-
-	  /**
-	   * Localstorage attempts to return the localstorage.
-	   *
-	   * This is necessary because safari throws
-	   * when a user disables cookies/localstorage
-	   * and you attempt to access it.
-	   *
-	   * @return {LocalStorage}
-	   * @api private
-	   */
-
-	  function localstorage() {
-	    try {
-	      return window.localStorage;
-	    } catch (e) {}
-	  }
-	});
-	var browser_1$3 = browser$4.log;
-	var browser_2$3 = browser$4.formatArgs;
-	var browser_3$3 = browser$4.save;
-	var browser_4$3 = browser$4.load;
-	var browser_5$3 = browser$4.useColors;
-	var browser_6$3 = browser$4.storage;
-	var browser_7$3 = browser$4.colors;
-
 	/**
 	 * Module dependencies.
 	 */
 
-	var debug$1 = browser$4('engine.io-client:polling');
+	var debug$1 = browser$1('engine.io-client:polling');
 
 	/**
 	 * Module exports.
@@ -6977,7 +6453,7 @@
 	 * Module requirements.
 	 */
 
-	var debug$2 = browser$4('engine.io-client:polling-xhr');
+	var debug$2 = browser$1('engine.io-client:polling-xhr');
 
 	/**
 	 * Module exports.
@@ -7634,7 +7110,7 @@
 	 * Module dependencies.
 	 */
 
-	var debug$3 = browser$4('engine.io-client:websocket');
+	var debug$3 = browser$1('engine.io-client:websocket');
 	var BrowserWebSocket = commonjsGlobal.WebSocket || commonjsGlobal.MozWebSocket;
 	var NodeWebSocket;
 	if (typeof window === 'undefined') {
@@ -8005,13 +7481,13 @@
 	  }
 	};
 
-	var _typeof$a = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+	var _typeof$8 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	/**
 	 * Module dependencies.
 	 */
 
-	var debug$4 = browser$4('engine.io-client:socket');
+	var debug$4 = browser$1('engine.io-client:socket');
 
 	/**
 	 * Module exports.
@@ -8032,7 +7508,7 @@
 
 	  opts = opts || {};
 
-	  if (uri && 'object' === (typeof uri === 'undefined' ? 'undefined' : _typeof$a(uri))) {
+	  if (uri && 'object' === (typeof uri === 'undefined' ? 'undefined' : _typeof$8(uri))) {
 	    opts = uri;
 	    uri = null;
 	  }
@@ -8093,7 +7569,7 @@
 	  this.forceNode = !!opts.forceNode;
 
 	  // other options for Node.js client
-	  var freeGlobal = _typeof$a(commonjsGlobal) === 'object' && commonjsGlobal;
+	  var freeGlobal = _typeof$8(commonjsGlobal) === 'object' && commonjsGlobal;
 	  if (freeGlobal.global === freeGlobal) {
 	    if (opts.extraHeaders && Object.keys(opts.extraHeaders).length > 0) {
 	      this.extraHeaders = opts.extraHeaders;
@@ -9298,7 +8774,7 @@
 	  this.jitter = jitter;
 	};
 
-	var _typeof$b = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+	var _typeof$9 = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	/**
 	 * Module dependencies.
@@ -9328,7 +8804,7 @@
 
 	function Manager(uri, opts) {
 	  if (!(this instanceof Manager)) return new Manager(uri, opts);
-	  if (uri && 'object' === (typeof uri === 'undefined' ? 'undefined' : _typeof$b(uri))) {
+	  if (uri && 'object' === (typeof uri === 'undefined' ? 'undefined' : _typeof$9(uri))) {
 	    opts = uri;
 	    uri = undefined;
 	  }
@@ -9851,7 +9327,7 @@
 	  this.emitAll('reconnect', attempt);
 	};
 
-	var _typeof$c = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+	var _typeof$a = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	var lib$1 = createCommonjsModule(function (module, exports) {
 	  /**
@@ -9886,7 +9362,7 @@
 	   */
 
 	  function lookup(uri, opts) {
-	    if ((typeof uri === 'undefined' ? 'undefined' : _typeof$c(uri)) === 'object') {
+	    if ((typeof uri === 'undefined' ? 'undefined' : _typeof$a(uri)) === 'object') {
 	      opts = uri;
 	      uri = undefined;
 	    }
@@ -9914,7 +9390,7 @@
 	    }
 	    if (parsed.query && !opts.query) {
 	      opts.query = parsed.query;
-	    } else if (opts && 'object' === _typeof$c(opts.query)) {
+	    } else if (opts && 'object' === _typeof$a(opts.query)) {
 	      opts.query = encodeQueryString(opts.query);
 	    }
 	    return io.socket(parsed.path, opts);
@@ -9965,7 +9441,7 @@
 	var lib_4 = lib$1.Manager;
 	var lib_5 = lib$1.Socket;
 
-	var _typeof$d = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+	var _typeof$b = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	/**
 	 * lodash (Custom Build) <https://lodash.com/>
@@ -10060,7 +9536,7 @@
 	 * // => false
 	 */
 	function isObjectLike(value) {
-	  return !!value && (typeof value === 'undefined' ? 'undefined' : _typeof$d(value)) == 'object';
+	  return !!value && (typeof value === 'undefined' ? 'undefined' : _typeof$b(value)) == 'object';
 	}
 
 	/**
@@ -10105,7 +9581,7 @@
 
 	var lodash_isplainobject = isPlainObject;
 
-	var _typeof$e = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+	var _typeof$c = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -10229,7 +9705,7 @@
 	                }
 	                this.genSortParam = genSortParam;
 	                this.genIncludeParam = genIncludeParam;
-	                if ((typeof genQueryStringFunctions === 'undefined' ? 'undefined' : _typeof$e(genQueryStringFunctions)) === 'object') {
+	                if ((typeof genQueryStringFunctions === 'undefined' ? 'undefined' : _typeof$c(genQueryStringFunctions)) === 'object') {
 	                    if (typeof genQueryStringFunctions.genSortParam === 'function') {
 	                        this.genSortParam = genQueryStringFunctions.genSortParam;
 	                    }
@@ -10985,6 +10461,15 @@
 	      });
 	    }
 	  }, {
+	    key: 'get',
+	    value: function get(id, cb) {
+	      this.restClient.request({ path: '/conversation/' + id, method: 'get' }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
 	    key: 'messages',
 	    value: function messages(id, query, cb) {
 	      query['conversation_id'] = id;
@@ -11295,6 +10780,15 @@
 	      });
 	    }
 	  }, {
+	    key: 'delete',
+	    value: function _delete(id, cb) {
+	      this.restClient.request({ path: '/newmessage/' + id, method: 'delete' }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
 	    key: 'send',
 	    value: function send(id, cb) {
 	      this.restClient.request({ path: '/newmessage/' + id + '/send', method: 'post' }).then(function (responce) {
@@ -11437,11 +10931,185 @@
 
 	function _classCallCheck$g(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+	var ScenarioItems = function () {
+	  function ScenarioItems(restClient, io) {
+	    _classCallCheck$g(this, ScenarioItems);
+
+	    this.restClient = restClient;
+	    this.io = io;
+	  }
+
+	  _createClass$g(ScenarioItems, [{
+	    key: 'find',
+	    value: function find(query, cb) {
+	      this.restClient.request({ path: '/scenarioitem', method: 'get', query: query }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'get',
+	    value: function get(id, cb) {
+	      this.restClient.request({ path: '/scenarioitem/' + id, method: 'get' }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'create',
+	    value: function create(bodyJSObject, cb) {
+	      this.restClient.request({ path: '/scenarioitem', method: 'post', bodyJSObject: bodyJSObject }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'update',
+	    value: function update(bodyJSObject, cb) {
+	      this.restClient.request({ path: '/scenarioitem/' + bodyJSObject.id, method: 'put', bodyJSObject: bodyJSObject }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'delete',
+	    value: function _delete(id, cb) {
+	      this.restClient.request({ path: '/scenarioitem/' + id, method: 'delete' }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }]);
+
+	  return ScenarioItems;
+	}();
+
+	var _createClass$h = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck$h(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Scenarios = function () {
+	  function Scenarios(restClient, io) {
+	    _classCallCheck$h(this, Scenarios);
+
+	    this.restClient = restClient;
+	    this.io = io;
+	    this.items = new ScenarioItems(restClient, io);
+	  }
+
+	  _createClass$h(Scenarios, [{
+	    key: 'find',
+	    value: function find(query, cb) {
+	      this.restClient.request({ path: '/scenario', method: 'get', query: query }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'get',
+	    value: function get(id, cb) {
+	      this.restClient.request({ path: '/scenario/' + id, method: 'get' }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'create',
+	    value: function create(bodyJSObject, cb) {
+	      this.restClient.request({ path: '/scenario', method: 'post', bodyJSObject: bodyJSObject }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'update',
+	    value: function update(bodyJSObject, cb) {
+	      this.restClient.request({ path: '/scenario/' + bodyJSObject.id, method: 'put', bodyJSObject: bodyJSObject }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'delete',
+	    value: function _delete(id, cb) {
+	      this.restClient.request({ path: '/scenario/' + id, method: 'delete' }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }]);
+
+	  return Scenarios;
+	}();
+
+	var _createClass$i = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck$i(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Calls = function () {
+	  function Calls(restClient, io) {
+	    _classCallCheck$i(this, Calls);
+
+	    this.restClient = restClient;
+	    this.io = io;
+	  }
+
+	  _createClass$i(Calls, [{
+	    key: 'callAccept',
+	    value: function callAccept(data, cb) {
+	      this.io.socket.request({ url: '/api/admin/call_accept', method: 'post', data: data }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'callDecline',
+	    value: function callDecline(data, cb) {
+	      this.io.socket.request({ url: '/api/admin/call_decline', method: 'post', data: data }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'onCallInit',
+	    value: function onCallInit(cb) {
+	      this.io.socket.on('call_init', function (msg) {
+	        cb(msg);
+	      });
+	    }
+	  }, {
+	    key: 'onCallCancel',
+	    value: function onCallCancel(cb) {
+	      this.io.socket.on('call_cancel', function (msg) {
+	        cb(msg);
+	      });
+	    }
+	  }]);
+
+	  return Calls;
+	}();
+
+	var _createClass$j = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck$j(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 	var WidgetSDK = function () {
 	  function WidgetSDK(_ref) {
 	    var url = _ref.url;
 
-	    _classCallCheck$g(this, WidgetSDK);
+	    _classCallCheck$j(this, WidgetSDK);
 
 	    var io = sails_io(lib$1);
 	    io.sails.url = url;
@@ -11470,13 +11138,13 @@
 	    this.message = new Message(this.restClient, this.io);
 	    this.manual_message = new ManualMessage(this.restClient, this.io);
 	    this.forms = new Forms(this.restClient, this.io);
+	    this.scenarios = new Scenarios(this.restClient, this.io);
+	    this.calls = new Calls(this.restClient, this.io);
 	  }
 
-	  _createClass$g(WidgetSDK, [{
+	  _createClass$j(WidgetSDK, [{
 	    key: 'init',
 	    value: function init(_ref2, cb) {
-	      var _this = this;
-
 	      var token = _ref2.token,
 	          email = _ref2.email,
 	          headers = _ref2.headers;
@@ -11512,8 +11180,6 @@
 	        url: '/api/admin/socket_init'
 	      }, function (body, response) {
 	        console.log('INIT : Server responded with status code ' + response.statusCode + ' and data: ', body);
-	        console.log(_this.io.socket);
-	        console.log(_this.io.sails);
 	        if (response.statusCode == 200) {
 	          cb(body);
 	        } else {

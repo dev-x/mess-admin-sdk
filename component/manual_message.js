@@ -35,6 +35,15 @@ export default class ManualMessage {
     })
   }
 
+  delete(id, cb) {
+    this.restClient.request({ path: '/newmessage/' + id, method: 'delete' }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    })
+  }
+
+
   send(id, cb) {
     this.restClient.request({ path: '/newmessage/' + id + '/send', method: 'post' }).then(responce => {
       cb(responce, null);
@@ -67,6 +76,7 @@ export default class ManualMessage {
       cb(null, error);
     })
   }
+
   stop(id, variation, cb) {
     this.restClient.request({ path: '/newmessage/' + id + '/stop', method: 'post', bodyJSObject: { variation } }).then(responce => {
       cb(responce, null);
@@ -82,6 +92,7 @@ export default class ManualMessage {
       cb(null, error);
     })
   }
+  
   stopVariation(id, variation, cb) {
     this.restClient.request({ path: '/newmessage/' + id + '/variation/' + variation + 'stop', method: 'post' }).then(responce => {
       cb(responce, null);
@@ -89,6 +100,7 @@ export default class ManualMessage {
       cb(null, error);
     })
   }
+
   deleteVariation(id, variation, cb) {
     this.restClient.request({ path: '/newmessage/' + id + '/variation/' + variation, method: 'delete' }).then(responce => {
       cb(responce, null);
