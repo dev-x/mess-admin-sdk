@@ -26,6 +26,9 @@ export default class WidgetSDK {
     io.sails.url = url;
     io.sails.useCORSRouteToGetCookie = false
     io.sails.autoConnect = true
+    io.socket.on('disconnect', function () {
+      io.socket._raw.io._reconnection = true;
+    });
     this.io = io;
     restClient.baseUrl = url + '/api';
     this.restClient = restClient;
@@ -33,8 +36,9 @@ export default class WidgetSDK {
     this.onMessage = function () { };
     this.inited = false;
     this.anonymous_session = null;
+    this.headers = {};
 
-    this.auth = new Auth(this.restClient, this.io);
+    this.auth = new Auth(this.restClient, this.io, this);
     this.admin = new Admin(this.restClient, this.io);
     this.inbox = new Inbox(this.restClient, this.io);
     this.conversation = new Conversation(this.restClient, this.io);
@@ -79,17 +83,23 @@ export default class WidgetSDK {
     }
 
     this.io.sails.initialConnectionHeaders = own_headers;
-    this.io.socket.headers = own_headers
-    this.io.socket.request({
-      method: 'get',
-      url: '/api/admin/socket_init',
-    }, (body, response) => {
-      console.log('INIT : Server responded with status code ' + response.statusCode + ' and data: ', body);
-      if (response.statusCode == 200) {
-        cb(body);
-      } else {
-        cb(null, body);
-      }
+    this.io.socket.headers = own_headers;
+    this.io.socket.extraHeaders = own_headers;
+    this.restClient.headers = Object.assign({}, this.restClient.headers, own_headers);
+    this.headers = own_headers;
+
+    this.io.socket.on('connect', () => {
+      this.io.socket.request({
+        method: 'get',
+        url: '/api/admin/socket_init',
+      }, (body, response) => {
+        console.log('INIT : Server responded with status code ' + response.statusCode + ' and data: ', body);
+        if (response.statusCode == 200) {
+          cb(body);
+        } else {
+          cb(null, body);
+        }
+      });
     });
   }
 }

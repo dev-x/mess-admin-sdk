@@ -9911,11 +9911,12 @@
 	function _classCallCheck$1(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Auth = function () {
-	  function Auth(restClient, io) {
+	  function Auth(restClient, io, context) {
 	    _classCallCheck$1(this, Auth);
 
 	    this.restClient = restClient;
 	    this.io = io;
+	    this.context = context;
 	  }
 
 	  _createClass$1(Auth, [{
@@ -9928,7 +9929,10 @@
 	          "x-token": responce.access_token,
 	          "x-user": data.email
 	        };
+
 	        _this.io.sails.initialConnectionHeaders = headers;
+	        _this.io.socket.headers = headers;
+	        _this.io.socket.extraHeaders = headers;
 	        _this.restClient.headers = Object.assign({}, _this.restClient.headers, headers);
 	        cb(responce, null);
 	      }).catch(function (error) {
@@ -9956,6 +9960,49 @@
 	      this.io.socket.extraHeaders = headers;
 	      this.restClient.headers = Object.assign({}, this.restClient.headers, headers);
 	      cb({ status: 'ok' }, null);
+	    }
+	  }, {
+	    key: "changeApp",
+	    value: function changeApp(_ref2, cb) {
+	      var token = _ref2.token,
+	          appId = _ref2.appId,
+	          headers = _ref2.headers;
+
+	      var own_headers = {};
+	      if (!headers) {
+	        if (!token) {
+	          return cb(null, {
+	            status: false,
+	            message: 'Token should be required'
+	          });
+	        }
+	        var own_headers = {
+	          "x-token": token
+	        };
+	        if (appId) {
+	          own_headers['x-app'] = appId;
+	        }
+	      } else {
+	        own_headers = headers;
+	      }
+
+	      this.io.sails.initialConnectionHeaders = own_headers;
+	      this.io.socket.headers = own_headers;
+	      this.io.socket.extraHeaders = own_headers;
+	      this.restClient.headers = Object.assign({}, this.restClient.headers, own_headers);
+	      this.context.headers = own_headers;
+
+	      this.io.socket.request({
+	        method: 'get',
+	        url: '/api/admin/socket_init'
+	      }, function (body, response) {
+	        console.log('INIT : Server responded with status code ' + response.statusCode + ' and data: ', body);
+	        if (response.statusCode == 200) {
+	          cb(body);
+	        } else {
+	          cb(null, body);
+	        }
+	      });
 	    }
 	  }]);
 
@@ -10369,7 +10416,7 @@
 	    key: 'sendMessage',
 	    value: function sendMessage(message, cb) {
 	      this.io.socket.request({
-	        method: 'get',
+	        method: 'post',
 	        url: '/api/conversation/message',
 	        data: message
 	      }, function (body, response) {
@@ -10414,15 +10461,11 @@
 	  }, {
 	    key: 'read_by_admin',
 	    value: function read_by_admin(id, cb) {
-	      fetch(this.restClient.baseUrl + '/conversation/' + id + '/read_by_admin', {
-	        method: 'PUT',
-	        headers: {
-	          "x-token": this.restClient.headers['x-token']
-	        }
-	      }).then(function (response) {
-	        return response.json();
-	      }).then(function (responseJson) {
-	        cb(responseJson, null);
+	      this.restClient.request({
+	        path: '/conversation/' + id + '/read_by_admin',
+	        method: 'put'
+	      }).then(function (responce) {
+	        cb(responce, null);
 	      }).catch(function (error) {
 	        cb(null, error);
 	      });
@@ -10439,19 +10482,99 @@
 	  return Inbox;
 	}();
 
+	var _typeof$d = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 	var _createClass$7 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	function _classCallCheck$7(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var Conversation = function () {
-	  function Conversation(restClient, io) {
-	    _classCallCheck$7(this, Conversation);
+	var ConversationMessages = function () {
+	  function ConversationMessages(restClient, io) {
+	    _classCallCheck$7(this, ConversationMessages);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	  }
 
-	  _createClass$7(Conversation, [{
+	  _createClass$7(ConversationMessages, [{
+	    key: 'find',
+	    value: function find(query, cb) {
+	      var my_query = null;
+	      if (query && query.sort) {
+	        my_query = '?';
+	        Object.keys(query).map(function (param_name) {
+	          if (_typeof$d(query[param_name]) !== 'object') {
+	            my_query += param_name + '=' + query[param_name] + '&';
+	          } else {
+	            if (param_name === 'sort') {
+	              Object.keys(query[param_name]).map(function (sort_name) {
+	                my_query += 'sort=' + sort_name + (query[param_name][sort_name] > 0 ? '+ASC' : '+DESC') + '&';
+	              });
+	            }
+	          }
+	        });
+	      }
+	      this.restClient.request({ path: '/message' + (my_query ? my_query : ''), method: 'get', query: my_query ? {} : query }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'get',
+	    value: function get(id, cb) {
+	      this.restClient.request({ path: '/message/' + id, method: 'get' }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'create',
+	    value: function create(bodyJSObject, cb) {
+	      this.restClient.request({ path: '/message', method: 'post', bodyJSObject: bodyJSObject }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'update',
+	    value: function update(bodyJSObject, cb) {
+	      this.restClient.request({ path: '/message/' + bodyJSObject.id, method: 'put', bodyJSObject: bodyJSObject }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }, {
+	    key: 'delete',
+	    value: function _delete(id, cb) {
+	      this.restClient.request({ path: '/scenarioitem/' + id, method: 'delete' }).then(function (responce) {
+	        cb(responce, null);
+	      }).catch(function (error) {
+	        cb(null, error);
+	      });
+	    }
+	  }]);
+
+	  return ConversationMessages;
+	}();
+
+	var _createClass$8 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck$8(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Conversation = function () {
+	  function Conversation(restClient, io) {
+	    _classCallCheck$8(this, Conversation);
+
+	    this.restClient = restClient;
+	    this.io = io;
+	    this.messages = new ConversationMessages(restClient, io);
+	  }
+
+	  _createClass$8(Conversation, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/conversation', method: 'get', query: query }).then(function (responce) {
@@ -10469,34 +10592,34 @@
 	        cb(null, error);
 	      });
 	    }
-	  }, {
-	    key: 'messages',
-	    value: function messages(id, query, cb) {
-	      query['conversation_id'] = id;
-	      this.restClient.request({ path: '/message', method: 'get', query: query }).then(function (responce) {
-	        cb(responce, null);
-	      }).catch(function (error) {
-	        cb(null, error);
-	      });
-	    }
+
+	    // messages(id, query, cb) {
+	    //   query['conversation_id'] = id
+	    //   this.restClient.request({ path: '/message', method: 'get', query }).then(responce => {
+	    //     cb(responce, null);
+	    //   }).catch(error => {
+	    //     cb(null, error);
+	    //   })
+	    // }
+
 	  }]);
 
 	  return Conversation;
 	}();
 
-	var _createClass$8 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$9 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$8(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$9(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Message = function () {
 	  function Message(restClient, io) {
-	    _classCallCheck$8(this, Message);
+	    _classCallCheck$9(this, Message);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	  }
 
-	  _createClass$8(Message, [{
+	  _createClass$9(Message, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/message', method: 'get', query: query }).then(function (responce) {
@@ -10510,19 +10633,19 @@
 	  return Message;
 	}();
 
-	var _createClass$9 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$a = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$9(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$a(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var App = function () {
 	  function App(restClient, io) {
-	    _classCallCheck$9(this, App);
+	    _classCallCheck$a(this, App);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	  }
 
-	  _createClass$9(App, [{
+	  _createClass$a(App, [{
 	    key: 'getInboxes',
 	    value: function getInboxes(query, cb) {
 	      this.restClient.request({ path: '/app/inboxes', method: 'get', query: query }).then(function (responce) {
@@ -10554,19 +10677,19 @@
 	  return App;
 	}();
 
-	var _createClass$a = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$b = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$a(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$b(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Segments = function () {
 	  function Segments(restClient, io) {
-	    _classCallCheck$a(this, Segments);
+	    _classCallCheck$b(this, Segments);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	  }
 
-	  _createClass$a(Segments, [{
+	  _createClass$b(Segments, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/segment', method: 'get', query: query }).then(function (responce) {
@@ -10615,19 +10738,19 @@
 	  return Segments;
 	}();
 
-	var _createClass$b = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$c = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$b(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$c(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Team = function () {
 	  function Team(restClient, io) {
-	    _classCallCheck$b(this, Team);
+	    _classCallCheck$c(this, Team);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	  }
 
-	  _createClass$b(Team, [{
+	  _createClass$c(Team, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/team', method: 'get', query: query }).then(function (responce) {
@@ -10650,19 +10773,19 @@
 	  return Team;
 	}();
 
-	var _createClass$c = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$d = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$c(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$d(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Event = function () {
 	  function Event(restClient, io) {
-	    _classCallCheck$c(this, Event);
+	    _classCallCheck$d(this, Event);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	  }
 
-	  _createClass$c(Event, [{
+	  _createClass$d(Event, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/event', method: 'get', query: query }).then(function (responce) {
@@ -10676,18 +10799,18 @@
 	  return Event;
 	}();
 
-	var _createClass$d = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$e = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$d(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$e(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Company = function () {
 	  function Company(restClient) {
-	    _classCallCheck$d(this, Company);
+	    _classCallCheck$e(this, Company);
 
 	    this.restClient = restClient;
 	  }
 
-	  _createClass$d(Company, [{
+	  _createClass$e(Company, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/company', method: 'get', query: query }).then(function (responce) {
@@ -10732,18 +10855,18 @@
 	  return Company;
 	}();
 
-	var _createClass$e = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$f = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$e(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$f(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var ManualMessage = function () {
 	  function ManualMessage(restClient) {
-	    _classCallCheck$e(this, ManualMessage);
+	    _classCallCheck$f(this, ManualMessage);
 
 	    this.restClient = restClient;
 	  }
 
-	  _createClass$e(ManualMessage, [{
+	  _createClass$f(ManualMessage, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/newmessage', method: 'get', query: query }).then(function (responce) {
@@ -10865,19 +10988,19 @@
 	  return ManualMessage;
 	}();
 
-	var _createClass$f = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$g = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$f(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$g(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Forms = function () {
 	  function Forms(restClient, io) {
-	    _classCallCheck$f(this, Forms);
+	    _classCallCheck$g(this, Forms);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	  }
 
-	  _createClass$f(Forms, [{
+	  _createClass$g(Forms, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/form', method: 'get', query: query }).then(function (responce) {
@@ -10927,19 +11050,19 @@
 	  return Forms;
 	}();
 
-	var _createClass$g = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$h = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$g(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$h(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var ScenarioItems = function () {
 	  function ScenarioItems(restClient, io) {
-	    _classCallCheck$g(this, ScenarioItems);
+	    _classCallCheck$h(this, ScenarioItems);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	  }
 
-	  _createClass$g(ScenarioItems, [{
+	  _createClass$h(ScenarioItems, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/scenarioitem', method: 'get', query: query }).then(function (responce) {
@@ -10989,20 +11112,20 @@
 	  return ScenarioItems;
 	}();
 
-	var _createClass$h = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$i = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$h(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$i(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Scenarios = function () {
 	  function Scenarios(restClient, io) {
-	    _classCallCheck$h(this, Scenarios);
+	    _classCallCheck$i(this, Scenarios);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	    this.items = new ScenarioItems(restClient, io);
 	  }
 
-	  _createClass$h(Scenarios, [{
+	  _createClass$i(Scenarios, [{
 	    key: 'find',
 	    value: function find(query, cb) {
 	      this.restClient.request({ path: '/scenario', method: 'get', query: query }).then(function (responce) {
@@ -11052,19 +11175,19 @@
 	  return Scenarios;
 	}();
 
-	var _createClass$i = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$j = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$i(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$j(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Calls = function () {
 	  function Calls(restClient, io) {
-	    _classCallCheck$i(this, Calls);
+	    _classCallCheck$j(this, Calls);
 
 	    this.restClient = restClient;
 	    this.io = io;
 	  }
 
-	  _createClass$i(Calls, [{
+	  _createClass$j(Calls, [{
 	    key: 'callAccept',
 	    value: function callAccept(data, cb) {
 	      this.io.socket.request({ url: '/api/admin/call_accept', method: 'post', data: data }).then(function (responce) {
@@ -11101,20 +11224,23 @@
 	  return Calls;
 	}();
 
-	var _createClass$j = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass$k = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	function _classCallCheck$j(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	function _classCallCheck$k(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var WidgetSDK = function () {
 	  function WidgetSDK(_ref) {
 	    var url = _ref.url;
 
-	    _classCallCheck$j(this, WidgetSDK);
+	    _classCallCheck$k(this, WidgetSDK);
 
 	    var io = sails_io(lib$1);
 	    io.sails.url = url;
 	    io.sails.useCORSRouteToGetCookie = false;
 	    io.sails.autoConnect = true;
+	    io.socket.on('disconnect', function () {
+	      io.socket._raw.io._reconnection = true;
+	    });
 	    this.io = io;
 	    restClient.baseUrl = url + '/api';
 	    this.restClient = restClient;
@@ -11122,8 +11248,9 @@
 	    this.onMessage = function () {};
 	    this.inited = false;
 	    this.anonymous_session = null;
+	    this.headers = {};
 
-	    this.auth = new Auth(this.restClient, this.io);
+	    this.auth = new Auth(this.restClient, this.io, this);
 	    this.admin = new Admin(this.restClient, this.io);
 	    this.inbox = new Inbox(this.restClient, this.io);
 	    this.conversation = new Conversation(this.restClient, this.io);
@@ -11142,9 +11269,11 @@
 	    this.calls = new Calls(this.restClient, this.io);
 	  }
 
-	  _createClass$j(WidgetSDK, [{
+	  _createClass$k(WidgetSDK, [{
 	    key: 'init',
 	    value: function init(_ref2, cb) {
+	      var _this = this;
+
 	      var token = _ref2.token,
 	          email = _ref2.email,
 	          headers = _ref2.headers;
@@ -11175,16 +11304,22 @@
 
 	      this.io.sails.initialConnectionHeaders = own_headers;
 	      this.io.socket.headers = own_headers;
-	      this.io.socket.request({
-	        method: 'get',
-	        url: '/api/admin/socket_init'
-	      }, function (body, response) {
-	        console.log('INIT : Server responded with status code ' + response.statusCode + ' and data: ', body);
-	        if (response.statusCode == 200) {
-	          cb(body);
-	        } else {
-	          cb(null, body);
-	        }
+	      this.io.socket.extraHeaders = own_headers;
+	      this.restClient.headers = Object.assign({}, this.restClient.headers, own_headers);
+	      this.headers = own_headers;
+
+	      this.io.socket.on('connect', function () {
+	        _this.io.socket.request({
+	          method: 'get',
+	          url: '/api/admin/socket_init'
+	        }, function (body, response) {
+	          console.log('INIT : Server responded with status code ' + response.statusCode + ' and data: ', body);
+	          if (response.statusCode == 200) {
+	            cb(body);
+	          } else {
+	            cb(null, body);
+	          }
+	        });
 	      });
 	    }
 	  }]);

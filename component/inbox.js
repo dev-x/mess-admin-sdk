@@ -61,7 +61,7 @@ export default class Inbox {
 
   sendMessage(message, cb) {
     this.io.socket.request({
-      method: 'get',
+      method: 'post',
       url: '/api/conversation/message',
       data: message
     }, function (body, response) {
@@ -105,18 +105,14 @@ export default class Inbox {
   }
 
   read_by_admin(id, cb) {
-    fetch(this.restClient.baseUrl + '/conversation/' + id + '/read_by_admin', {
-      method: 'PUT',
-      headers: {
-        "x-token": this.restClient.headers['x-token']
-      }
-    }).then((response) => response.json())
-      .then((responseJson) => {
-        cb(responseJson, null);
-      })
-      .catch((error) => {
-        cb(null, error);
-      });
+    this.restClient.request({
+      path: '/conversation/' + id + '/read_by_admin',
+      method: 'put',
+    }).then(responce => {
+      cb(responce, null);
+    }).catch(error => {
+      cb(null, error);
+    })
   }
 
   onEvent(cb) {
